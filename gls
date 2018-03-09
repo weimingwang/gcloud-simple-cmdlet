@@ -1,0 +1,6 @@
+if [ "$#" -eq 0 ]
+then
+	gcloud compute instances list
+else
+	gcloud compute instances list | grep $*
+fi

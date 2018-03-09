@@ -1,0 +1,16 @@
+echo "Looking up metadata: block-project-ssh-keys ..."
+needssh=$(gcloud compute instances list --filter="name=($1)" --format="value(metadata[items]['block-project-ssh-keys'])")
+if [ "$needssh" == "true" ]; then
+  who=$(whoami)
+  keys=$(gcloud compute instances list --filter="name=($1)" --format="value(metadata[items]['ssh-keys'])")
+  zone=$(gcloud compute instances list --filter="name=($1)" --format="value(zone)")
+  echo "Searching for your key in metadata ..."
+  hasKey=$(echo $keys | grep $who)
+  if [ "$hasKey" == "" ]; then
+    echo "Adding your key using /home/$who/.ssh/google_compute_engine.pub ..."
+    newKey=$(cat /home/$who/.ssh/google_compute_engine.pub)
+    gcloud compute instances add-metadata $1 --zone $zone --metadata ssh-keys="$keys$who:$newKey"
+  fi
+fi
+ip=$(gcloud --format="value(networkInterfaces[0].accessConfigs[0].natIP)" compute instances list --filter="name=($1)")
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $ip

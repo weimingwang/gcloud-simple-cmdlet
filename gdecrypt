@@ -1,0 +1,18 @@
+  project="$1"
+  keyRing="$2"
+  keyName="$3"
+  cipherText="$4"
+
+  accessToken=$(gcloud auth application-default print-access-token)
+  body="{'ciphertext':'$cipherText'}"
+  api="https://cloudkms.googleapis.com/v1/projects/$project/locations/global/keyRings/$keyRing/cryptoKeys/$keyName:decrypt"
+  result=$(curl -H "Authorization: Bearer $accessToken" -H 'Content-Type: application/json' -X POST -d $body $api 2>/dev/null)
+  result=$(echo $result | grep 'plaintext')
+  if [ "$result" == "" ]
+  then
+    echo "Failed! Cannot decrypt the protected secret."
+  else
+    decrypted_value_base64=$(python -c "import json,sys;o=json.loads('$result');print o['plaintext']")
+    decrypted_value=$(echo $decrypted_value_base64 | base64 --decode)
+    echo "result:	" $decrypted_value
+  fi

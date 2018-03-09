@@ -1,0 +1,18 @@
+  project="$1"
+  keyRing="$2"
+  keyName="$3"
+  secret="$4"
+
+  accessToken=$(gcloud auth application-default print-access-token)
+  code=$(echo $secret | base64)
+  body="{'plaintext':'$code'}"
+  api="https://cloudkms.googleapis.com/v1/projects/$project/locations/global/keyRings/$keyRing/cryptoKeys/$keyName:encrypt"
+  result=$(curl -H "Authorization: Bearer $accessToken" -H 'Content-Type: application/json' -X POST -d $body $api 2>/dev/null)
+  result=$(echo $result | grep 'ciphertext')
+  if [ "$result" == "" ]
+  then
+    echo "Failed! Cannot encrypt the text."
+  else
+    encrypted_value=$(python -c "import json,sys;o=json.loads('$result');print o['ciphertext']")
+    echo "result:	" $encrypted_value
+  fi
